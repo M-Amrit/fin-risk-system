@@ -1,0 +1,87 @@
+// =====================================================================================
+// load_script.qvs | Qlik Sense data load for the 3-sheet suite
+// STATUS: NOT EXECUTED here (no Qlik engine in the build sandbox). Table/column names are verified against the
+//         PostgreSQL views that WERE executed. Replace the connection name with your own PostgreSQL data connection.
+// Model rule: ONE signed 'Amount' (natural sign) so every set-analysis expression is a plain Sum().
+// =====================================================================================
+LIB CONNECT TO 'PostgreSQL_finrisk';      // <-- your data connection
+
+// ---------- P&L / GL fact (from the pre-aggregated materialised view) ----------
+GL:
+LOAD
+    posting_period                                   as PostingPeriod,
+    Year(posting_period)                             as FiscalYear,        // fiscal year = calendar year in this build
+    Month(posting_period)                            as FiscalPeriod,
+    Year(posting_period)*100 + Month(posting_period) as PeriodKey,
+    Date(MonthEnd(posting_period))                   as PeriodEnd,
+    account_code                                     as AccountCode,
+    account_type                                     as AccountType,
+    financial_statement                              as Statement,
+    sub_category                                     as SubCategory,
+    department_id                                    as DepartmentID,
+    signed_amount                                    as Amount;
+SQL SELECT posting_period, account_code, account_type, financial_statement, sub_category, department_id, signed_amount
+FROM fin.mv_gl_monthly;
+
+// Account attributes double as the COA hierarchy: Category -> Sub-category -> Account
+Accounts:
+LOAD account_code as AccountCode, account_name as AccountName, account_type as Category, sub_category as SubCategoryLevel;
+SQL SELECT account_code, account_name, account_type, sub_category FROM fin.dim_chart_of_accounts;
+// Drill-down group for the pivot / treemap:
+// Create the drill-down master dimension in the app UI: Category > SubCategoryLevel > AccountName
+
+Departments:
+LOAD department_id as DepartmentID, department_name as Department;
+SQL SELECT department_id, department_name FROM fin.dim_department;
+
+// ---------- Variance (budget joined to actual at account x department x month) ----------
+Variance:
+LOAD
+    Year(posting_period)*100 + Month(posting_period) as PeriodKey,
+    account_code                                     as AccountCode,
+    department_id                                    as DepartmentID,
+    actual_amount                                    as ActualAmt,
+    budget_amount                                    as BudgetAmt,
+    favourable_variance                              as FavVariance;
+SQL SELECT posting_period, account_code, department_id, actual_amount, budget_amount, favourable_variance
+FROM fin.v_variance_analysis;
+
+// ---------- Credit: live scored book + resolved loans ----------
+Loans:
+LOAD
+    loan_id as LoanID, as_of_date as ScoreDate, score as Score, pd as PD, risk_band as RiskBand,
+    ead as LoanBalance, lgd as LGD, pd*lgd*ead as ExpectedLoss;
+SQL SELECT loan_id, as_of_date, score, pd, risk_band, ead, lgd FROM fin.stg_scored_loans;
+
+LoanStatus:
+LOAD loan_id as LoanID, loan_status as LoanStatus, issue_date as IssueDate, loan_amount as OriginalAmount;
+SQL SELECT loan_id, loan_status, issue_date, loan_amount FROM fin.fact_loan_portfolio;
+
+// Scorecard monitoring tables (written by run_scorecard.py)
+BandSummary:
+LOAD sample as Sample, band as RiskBand, n as BandN, bads as BandBads, observed_pd as ObservedPD, mean_predicted_pd as PredictedPD;
+LOAD * FROM [lib://Data/scorecard_out/band_summary.csv] (txt, utf8, embedded labels, delimiter is ',', msq);
+
+WoETrend:
+LOAD feature as Feature, label as BinLabel, bin as BinOrder, count as BinCount, bad_rate as BinBadRate, woe as WoE;
+LOAD * FROM [lib://Data/scorecard_out/woe_bins_all.csv] (txt, utf8, embedded labels, delimiter is ',', msq);
+
+CharPSI:
+LOAD feature as PSIFeature, psi as CharacteristicPSI, flag as PSIFlag;
+LOAD * FROM [lib://Data/scorecard_out/characteristic_psi.csv] (txt, utf8, embedded labels, delimiter is ',', msq);
+
+// ---------- Latest closed period -> variables used by the YTD expressions ----------
+Latest:
+LOAD Max(PeriodKey) as MaxPK RESIDENT GL;
+LET vMaxPK = Peek('MaxPK', 0, 'Latest');
+LET vCurFY = Floor($(vMaxPK) / 100);      // e.g. 2021
+LET vCurFP = Mod($(vMaxPK), 100);         // latest closed fiscal period, e.g. 12
+DROP TABLE Latest;
+
+// Model-level monitoring scalars (flat one-row CSV written by run_scorecard.py)
+ModelMetrics:
+LOAD * FROM [lib://Data/scorecard_out/model_metrics_flat.csv] (txt, utf8, embedded labels, delimiter is ',', msq);
+LET vScorePSI  = Peek('score_psi', 0, 'ModelMetrics');
+LET vTestGini  = Peek('test_gini', 0, 'ModelMetrics');
+LET vTestKS    = Peek('test_ks', 0, 'ModelMetrics');
+LET vTestAUC   = Peek('test_auc', 0, 'ModelMetrics');

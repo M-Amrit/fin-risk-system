@@ -1,0 +1,18 @@
+account_id,account_code,account_name,account_type,financial_statement,sub_category,normal_balance
+1,1000,Cash and Equivalents,Asset,BS,Current Assets,D
+2,1200,Loans Receivable (Gross),Asset,BS,Earning Assets,D
+3,1210,Allowance for Credit Losses,Asset,BS,Contra Asset,C
+4,1500,Fixed Assets (Net),Asset,BS,Non-Current Assets,D
+5,2000,Customer Deposits,Liability,BS,Funding,C
+6,2100,Accrued Liabilities,Liability,BS,Current Liabilities,C
+7,3000,Share Capital,Equity,BS,Paid-in Capital,C
+8,3100,Retained Earnings,Equity,BS,Retained Earnings,C
+9,4000,Interest Income - Loans,Revenue,PL,Interest Income,C
+10,4100,Fee Income,Revenue,PL,Non-Interest Income,C
+11,5000,Interest Expense - Deposits,Expense,PL,COGS,D
+12,5100,Loan Servicing Costs,Expense,PL,COGS,D
+13,6000,Salaries and Benefits,Expense,PL,Operating Expense,D
+14,6100,Technology and Cloud,Expense,PL,Operating Expense,D
+15,6200,Marketing,Expense,PL,Operating Expense,D
+16,6300,Rent and Facilities,Expense,PL,Operating Expense,D
+17,7000,Provision for Credit Losses,Expense,PL,Provision,D

@@ -1,0 +1,17 @@
+feature,iv,n_bins,monotonic,strength,selected_by_iv
+fico,0.1287930580253201,12,True,medium,True
+annual_inc,0.050864187364684316,13,True,weak,True
+dti,0.04807900771209528,11,True,weak,True
+loan_amnt,0.024086076671758258,9,True,weak,True
+revol_util,0.018984296779982292,8,True,useless,False
+term,0.015835563189666845,2,True,useless,False
+home_ownership,0.005412582094049973,3,True,useless,False
+inq_last_6mths,0.0045079205759805275,3,True,useless,False
+delinq_2yrs,0.0026658139756279143,2,True,useless,False
+emp_length,0.002290957947241159,7,True,useless,False
+pub_rec,0.001102080345737456,2,True,useless,False
+purpose,0.0006349773042379541,4,True,useless,False
+total_acc,0.00015986660591593872,5,True,useless,False
+revol_bal,0.00011676767446458595,3,True,useless,False
+open_acc,7.022313536746733e-05,3,True,useless,False
+verification_status,2.4235098802088185e-05,3,True,useless,False

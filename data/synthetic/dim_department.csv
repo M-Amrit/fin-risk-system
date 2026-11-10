@@ -1,0 +1,6 @@
+department_id,department_code,department_name,cost_center
+1,LND,Lending Operations,CC100
+2,RSK,Credit Risk,CC200
+3,TEC,Technology,CC300
+4,MKT,Marketing,CC400
+5,COR,Corporate,CC900
